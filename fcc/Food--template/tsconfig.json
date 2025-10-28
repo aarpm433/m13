@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+, "app/navigation/AppNavigator.tsx", "App/index.tsx", "app/screens/LoginScreen.tsx", "app/screens/RestaurantListScreen.tsx", "App.tsx"  ]
 }
