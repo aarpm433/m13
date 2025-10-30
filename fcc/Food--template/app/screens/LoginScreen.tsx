@@ -7,7 +7,8 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = () => {
     if (email && password) {
-      navigation.replace("Restaurants");
+      // Navigate to Restaurants tab inside Main BottomTabs
+      navigation.replace("Main");
     } else {
       Alert.alert("Login Failed", "Please enter email and password");
     }
