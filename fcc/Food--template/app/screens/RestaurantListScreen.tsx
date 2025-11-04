@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// app/screens/RestaurantListScreen.tsx
+import React, { useMemo, useState } from "react";
 import {
   View,
   FlatList,
@@ -6,111 +7,171 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  useWindowDimensions,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
 export default function RestaurantListScreen({ navigation }: any) {
-  const [restaurants] = useState([
-    { id: "1", name: "Pizza Palace", rating: 4.5, price: "$$", image: "https://via.placeholder.com/150" },
-    { id: "2", name: "Sushi Central", rating: 4.8, price: "$$$", image: "https://via.placeholder.com/150" },
-    { id: "3", name: "Burger Town", rating: 4.0, price: "$", image: "https://via.placeholder.com/150" },
-    { id: "4", name: "Pasta Heaven", rating: 3.9, price: "$$", image: "https://via.placeholder.com/150" },
-  ]);
+  // data: replace image requires with your actual local asset paths
+  const allRestaurants = [
+    {
+      id: "1",
+      name: "Golden Bar & Grill",
+      rating: 4.5,
+      price: "$$",
+      image: require("/home/aaron/Codeboxx/m13/fcc/Food--template/assets/support_materials_13/Images/Restaurants/cuisineViet.jpg"),
+    },
+    {
+      id: "2",
+      name: "WJU Eats",
+      rating: 4.8,
+      price: "$$$",
+      image: require("/home/aaron/Codeboxx/m13/fcc/Food--template/assets/support_materials_13/Images/Restaurants/cuisineViet.jpg"),
+    },
+    {
+      id: "3",
+      name: "Sweet Dragon",
+      rating: 4.0,
+      price: "$",
+      image: require("/home/aaron/Codeboxx/m13/fcc/Food--template/assets/support_materials_13/Images/Restaurants/cuisineViet.jpg"),
+    },
+    {
+      id: "4",
+      name: "Golden Creamery",
+      rating: 3.9,
+      price: "$$",
+      image: require("/home/aaron/Codeboxx/m13/fcc/Food--template/assets/support_materials_13/Images/Restaurants/cuisineViet.jpg"),
+    },
+    // add more items if you want
+  ];
 
-  const [ratingFilter, setRatingFilter] = useState("");
-  const [priceFilter, setPriceFilter] = useState("");
+  const [ratingFilter, setRatingFilter] = useState<string | number | null>("");
+  const [priceFilter, setPriceFilter] = useState<string>("");
 
-  const filteredRestaurants = restaurants.filter((r) => {
-    const ratingMatch = ratingFilter ? r.rating >= parseFloat(ratingFilter) : true;
-    const priceMatch = priceFilter ? r.price === priceFilter : true;
-    return ratingMatch && priceMatch;
-  });
+  // responsive layout
+  const { width } = useWindowDimensions();
+
+  // choose columns depending on width
+  const columns = width >= 900 ? 3 : width >= 420 ? 2 : 1;
+  const horizontalPadding = 16; // container padding horizontal
+  const gap = 16; // space between cards
+  const cardWidth = (width - horizontalPadding * 2 - gap * (columns - 1)) / columns;
+
+  // filter the data (memoized)
+  const filtered = useMemo(() => {
+    return allRestaurants.filter((r) => {
+      const ratingMatch = ratingFilter ? r.rating >= parseFloat(String(ratingFilter)) : true;
+      const priceMatch = priceFilter ? r.price === priceFilter : true;
+      return ratingMatch && priceMatch;
+    });
+  }, [ratingFilter, priceFilter]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Restaurants</Text>
+      <Text style={styles.title}>NEARBY RESTAURANTS</Text>
 
-      <View style={styles.filters}>
-        <View style={styles.pickerContainer}>
-          <Text style={styles.label}></Text>
-          <Picker
-            selectedValue={ratingFilter}
-            onValueChange={(value) => setRatingFilter(value)}
-            style={styles.picker}
-          >
-            <Picker.Item label="All Ratings" value="" />
-            <Picker.Item label="4.5+" value="4.5" />
-            <Picker.Item label="4.0+" value="4.0" />
-            <Picker.Item label="3.5+" value="3.5" />
-          </Picker>
+      <View style={styles.filtersRow}>
+        <View style={styles.filter}>
+          <Text style={styles.filterLabel}>Rating</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={ratingFilter}
+              onValueChange={(value) => setRatingFilter(value)}
+              mode="dropdown"
+            >
+              <Picker.Item label="-- Select --" value="" />
+              <Picker.Item label="4.5+" value="4.5" />
+              <Picker.Item label="4.0+" value="4.0" />
+              <Picker.Item label="3.5+" value="3.5" />
+            </Picker>
+          </View>
         </View>
 
-        <View style={styles.pickerContainer}>
-          <Text style={styles.label}></Text>
-          <Picker
-            selectedValue={priceFilter}
-            onValueChange={(value) => setPriceFilter(value)}
-            style={styles.picker}
-          >
-            <Picker.Item label="All Prices" value="" />
-            <Picker.Item label="$" value="$" />
-            <Picker.Item label="$$" value="$$" />
-            <Picker.Item label="$$$" value="$$$" />
-          </Picker>
+        <View style={styles.filter}>
+          <Text style={styles.filterLabel}>Price</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={priceFilter}
+              onValueChange={(value) => setPriceFilter(value)}
+              mode="dropdown"
+            >
+              <Picker.Item label="-- Select --" value="" />
+              <Picker.Item label="$" value="$" />
+              <Picker.Item label="$$" value="$$" />
+              <Picker.Item label="$$$" value="$$$" />
+            </Picker>
+          </View>
         </View>
       </View>
 
+      <Text style={styles.sectionTitle}>RESTAURANTS</Text>
+
       <FlatList
-        data={filteredRestaurants}
+        data={filtered}
         keyExtractor={(item) => item.id}
+        numColumns={columns}
+        showsVerticalScrollIndicator={false}
+        // Make sure spacing between rows/columns looks right
+        columnWrapperStyle={columns > 1 ? { justifyContent: "space-between", paddingHorizontal: horizontalPadding } : undefined}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: 8 }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.getParent()?.navigate("Menu", { restaurant: item })}
+            style={[styles.card, { width: cardWidth }]}
+            onPress={() => navigation.navigate("Menu", { restaurant: item })}
+            activeOpacity={0.85}
           >
-            <Image source={{ uri: item.image }} style={styles.image} />
-            <View style={styles.details}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text>⭐ {item.rating} | {item.price}</Text>
+            <Image source={item.image} style={styles.image} />
+            <View style={styles.cardBody}>
+              <Text style={styles.name} numberOfLines={2}>
+                {item.name}
+              </Text>
+              <Text style={styles.meta}>
+                {item.price} · ⭐ {item.rating.toFixed(1)}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
+        // force rerender when columns change so layout updates
+        extraData={columns}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
-  filters: { marginBottom: 15 },
-  pickerContainer: {
-    marginBottom: 10,
-    borderWidth: 1,
+  container: { flex: 1, backgroundColor: "#F6F6F6", paddingTop: 12 },
+  title: { fontSize: 16, fontWeight: "700", marginHorizontal: 16, marginBottom: 8, color: "#222" },
+
+  filtersRow: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    gap: 12,
+  },
+  filter: { flex: 1 },
+  filterLabel: { fontSize: 13, fontWeight: "700", marginBottom: 6 },
+  pickerWrapper: {
+    backgroundColor: "#C48264",
     borderRadius: 8,
-    borderColor: "#ccc",
     overflow: "hidden",
   },
-  picker: { height: 40, width: "100%" },
-  label: {
-    position: "absolute",
-    left: 10,
-    top: 5,
-    zIndex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 5,
-    fontSize: 12,
-    color: "#555",
-  },
+
+  sectionTitle: { fontSize: 16, fontWeight: "700", marginHorizontal: 16, marginTop: 16 },
+
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 10,
-    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginTop: 12,
+    // shadow (iOS)
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    // elevation (Android)
+    elevation: 3,
+    overflow: "hidden",
   },
-  image: { width: 70, height: 70, borderRadius: 8, marginRight: 15 },
-  details: { flex: 1 },
-  name: { fontSize: 18, fontWeight: "bold" },
+  image: { width: "100%", height: 120, resizeMode: "cover" },
+  cardBody: { padding: 10 },
+  name: { fontSize: 14, fontWeight: "700", color: "#111" },
+  meta: { marginTop: 6, color: "#666", fontSize: 13 },
 });

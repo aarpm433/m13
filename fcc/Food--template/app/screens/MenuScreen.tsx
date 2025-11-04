@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function MenuScreen({ route }: any) {
+export default function MenuScreen({ route, navigation }: any) {
   const { restaurant } = route.params;
 
   const initialMenu = [
@@ -55,7 +55,7 @@ export default function MenuScreen({ route }: any) {
     setSuccess(null);
 
     setTimeout(() => {
-      const isSuccess = Math.random() > 0.3; // simulate API success/failure
+      const isSuccess = Math.random() > 0.3;
       setSuccess(isSuccess);
       setLoading(false);
     }, 2000);
@@ -63,16 +63,22 @@ export default function MenuScreen({ route }: any) {
 
   return (
     <View style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={28} color="#ff5733" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>{restaurant.name} Menu</Text>
 
-      <Image
-        source={require("../../assets/support_materials_13/Images/RestaurantMenu.jpg")}
-        style={styles.banner}
-      />
-
+      {/* Menu Items */}
       {menu.map((item) => (
         <View key={item.id} style={styles.menuItem}>
-          <View>
+          <Image
+            source={require("../../assets/support_materials_13/Images/RestaurantMenu.jpg")}
+            style={styles.itemImage}
+          />
+
+          <View style={styles.itemDetails}>
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
           </View>
@@ -116,11 +122,14 @@ export default function MenuScreen({ route }: any) {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Confirm Your Order</Text>
 
-            {menu.filter((item) => item.qty > 0).map((item) => (
-              <Text key={item.id}>
-                {item.name} × {item.qty} = ${(item.price * item.qty).toFixed(2)}
-              </Text>
-            ))}
+            {menu
+              .filter((item) => item.qty > 0)
+              .map((item) => (
+                <Text key={item.id}>
+                  {item.name} × {item.qty} = $
+                  {(item.price * item.qty).toFixed(2)}
+                </Text>
+              ))}
 
             <Text style={styles.total}>
               Total: $
@@ -151,7 +160,9 @@ export default function MenuScreen({ route }: any) {
             {success === false && (
               <View style={styles.statusContainer}>
                 <Ionicons name="close-circle" size={50} color="red" />
-                <Text style={styles.failureText}>Order Failed. Please try again.</Text>
+                <Text style={styles.failureText}>
+                  Order Failed. Please try again.
+                </Text>
                 <TouchableOpacity
                   style={styles.confirmButton}
                   onPress={handleConfirmOrder}
@@ -178,17 +189,11 @@ export default function MenuScreen({ route }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { flex: 1, padding: 20, paddingBottom: 80, backgroundColor: "#fff" },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
-  banner: {
-    width: "100%",
-    height: 180,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
+
   menuItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#ddd",
@@ -196,9 +201,27 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
+
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+
+  itemDetails: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
   itemName: { fontSize: 18, fontWeight: "600" },
   itemPrice: { fontSize: 14, color: "#777" },
-  quantityContainer: { flexDirection: "row", alignItems: "center" },
+
+  quantityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   qtyText: { fontSize: 18, marginHorizontal: 10 },
   orderButton: {
     backgroundColor: "#ff5733",
@@ -208,6 +231,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   orderText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
