@@ -9,32 +9,29 @@ const Stack = createNativeStackNavigator();
 
 export default function RestaurantsStack({ navigation, route }: any) {
   React.useLayoutEffect(() => {
-    const routeName = getFocusedRouteNameFromRoute(route);
-    // Always show footer (BottomTabs) on both screens
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "RestaurantList";
     navigation.setOptions({
       tabBarStyle: { display: "flex" },
     });
   }, [navigation, route]);
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Restaurant List has header and footer */}
-      <Stack.Screen name="RestaurantList">
-        {() => (
-          <MainLayout navigation={navigation}>
-            <RestaurantListScreen navigation={navigation} />
-          </MainLayout>
-        )}
-      </Stack.Screen>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="RestaurantList">
+          {(props) => (
+            <MainLayout>
+              <RestaurantListScreen {...props} />
+            </MainLayout>
+          )}
+        </Stack.Screen>
 
-      {/* Menu also has header/footer via MainLayout */}
-      <Stack.Screen name="Menu">
-        {({ route }) => (
-          <MainLayout navigation={navigation}>
-            <MenuScreen route={route} navigation={navigation} />
-          </MainLayout>
-        )}
-      </Stack.Screen>
-    </Stack.Navigator>
-  );
+        <Stack.Screen name="Menu">
+          {(props) => (
+            <MainLayout>
+              <MenuScreen {...props} />
+            </MainLayout>
+          )}
+        </Stack.Screen>
+      </Stack.Navigator>
+  )
 }

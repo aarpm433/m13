@@ -48,3 +48,20 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+RESEARCH
+
+
+What is the difference between Native and Cross-Platform Mobile applications?
+
+Native apps are built for a specific platform in mind (iOS, Android). They use platform-specific languages, resulting in optimal performance and user experience but requiring separate devdelopment for each plaform. Corss-platform apps, use one single codebade for multiple platforms, but may have performance limitations. Cross-platforms apps are fasther and more cost effective which may be interesting for people with a smaller dev budget.
+
+
+What is the difference between React Native and React?
+
+React is a platform that runs in web browsers which the primary goal being to create user interfaces (UIs) for web apps. It can use HTML, CSS, and JavaScript to render its UI elements, often times it will use CSS for styling and animations. On the other hand, React native is primarily used for developing corss-platform native mobile appliocations for both iOS and Android, these apps run off of mobile devices but can also target the web. 
+
+
+
+
