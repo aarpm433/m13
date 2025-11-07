@@ -9,57 +9,56 @@ export default function LoginScreen({ navigation }: any) {
 
   const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
-const handleLogin = async () => {
-  if (!email || !password) {
-    Alert.alert("Login Failed", "Please enter email and password");
-    return;
-  }
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Login Failed", "Please enter both email and password.");
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const response = await fetch(`${NGROK_URL}/api/auth`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json", // Ensure Spring returns JSON
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch(`${NGROK_URL}/api/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const text = await response.text();
-    let data: any = {};
-    if (text) {
+      // handle non-JSON responses safely
+      const text = await response.text();
+      let data: any = {};
       try {
         data = JSON.parse(text);
       } catch {
         data = { message: text };
       }
-    }
 
-    if (response.ok) {
-      console.log("Login successful:", data);
+      if (response.ok) {
+        console.log("✅ Login successful:", data);
 
-      if (data?.token) {
-        await AsyncStorage.setItem("userToken", data.token);
+        if (data?.token) {
+          await AsyncStorage.setItem("userToken", data.token);
+        }
+
+        navigation.replace("Main");
+      } else if (response.status === 401) {
+        Alert.alert("Login Failed", "Invalid email or password. Please try again.");
+      } else {
+        Alert.alert("Login Failed", data?.message || "Something went wrong.");
       }
-
-      navigation.replace("Main");
-    } else if (response.status === 401) {
-      Alert.alert("Login Failed", "Invalid email or password");
-    } else {
-      Alert.alert("Login Failed", data?.message || "Something went wrong");
+    } catch (error) {
+      console.error("🚫 Network error:", error);
+      Alert.alert(
+        "Connection Error",
+        "Unable to reach the server. Please make sure your backend is running and your NGROK URL is valid."
+      );
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error(error);
-    Alert.alert(
-      "Error",
-      "Unable to connect to server. Make sure the backend is running and your NGROK URL is correct."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -93,6 +92,6 @@ const handleLogin = async () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
-  input: { borderWidth: 1, marginBottom: 15, padding: 10, borderRadius: 5 },
+  input: { borderWidth: 1, borderColor: "#ccc", marginBottom: 15, padding: 10, borderRadius: 5 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
 });

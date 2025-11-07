@@ -19,3 +19,18 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+export type RootStackParamList = {
+  Login: undefined;
+  RestaurantList: undefined;
+  Menu: {
+    restaurant: {
+      id: string;
+      name: string;
+      rating: number;
+      price: string;
+    }
+  };
+  Orders: undefined;
+  OrderConfirmation: undefined;
+};

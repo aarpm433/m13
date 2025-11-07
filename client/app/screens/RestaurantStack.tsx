@@ -16,22 +16,22 @@ export default function RestaurantsStack({ navigation, route }: any) {
   }, [navigation, route]);
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="RestaurantList">
-        {(props) => (
-          <MainLayout>
-            <RestaurantListScreen {...props} />
-          </MainLayout>
-        )}
-      </Stack.Screen>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="RestaurantList">
+          {(props) => (
+            <MainLayout>
+              <RestaurantListScreen {...props} />
+            </MainLayout>
+          )}
+        </Stack.Screen>
 
-      <Stack.Screen name="Menu">
-        {(props) => (
-          <MainLayout>
-            <MenuScreen {...props} />
-          </MainLayout>
-        )}
-      </Stack.Screen>
-    </Stack.Navigator>
-  );
+        <Stack.Screen name="Menu">
+          {(props) => (
+            <MainLayout>
+              <MenuScreen {...props} />
+            </MainLayout>
+          )}
+        </Stack.Screen>
+      </Stack.Navigator>
+  )
 }

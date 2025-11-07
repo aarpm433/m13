@@ -13,14 +13,14 @@ import { Picker } from "@react-native-picker/picker";
 
 // Map restaurant names to local images
 const imageMap: { [key: string]: any } = {
-  "Mayert-Leannon": require("../../assets/support_materials_13/Images/Restaurants/cuisinePasta.jpg"),
-  "Luettgen, Hayes and Dietrich": require("../../assets/support_materials_13/Images/Restaurants/RestaurantMenu.jpg"),
-  "Upton LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisinePasta.jpg"),
-  "Boehm LLC": require("../../assets/support_materials_13/Images/Restaurants/RestaurantMenu.jpg"),
-  "Durgan, Bayer and Hills": require("../../assets/support_materials_13/Images/Restaurants/cuisinePasta.jpg"),
-  "Kilback-Doyle": require("../../assets/support_materials_13/Images/Restaurants/RestaurantMenu.jpg"),
-  "Kuphal LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisinePasta.jpg"),
-  "Kessler-Gulgowski": require("../../assets/support_materials_13/Images/Restaurants/RestaurantMenu.jpg"),
+  "Mayert-Leannon": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Luettgen, Hayes and Dietrich": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Upton LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Boehm LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Durgan, Bayer and Hills": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Kilback-Doyle": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Kuphal LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Kessler-Gulgowski": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
 };
 
 
@@ -57,16 +57,16 @@ export default function RestaurantListScreen({ navigation }: any) {
         { id: 8, name: "Kessler-Gulgowski", rating: 3, price_range: 2, active: true },
       ];
 
-      setRestaurants(
-        data.map((r) => ({
-          id: r.id.toString(),
-          name: r.name,
-          rating: r.rating,
-          price: "$".repeat(r.price_range),
-          active: r.active,
-          imagePath: imageMap[r.name] || require("../../assets/support_materials_13/Images/Restaurants/RestaurantMenu.jpg"),
-        }))
-      );
+    setRestaurants(
+      data.map((r) => ({
+        id: r.id.toString(),
+        name: r.name,
+        rating: r.rating,
+        price: "$".repeat(r.price_range),
+        active: r.active,
+        imagePath: imageMap[r.name] || require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+      }))
+    );
 
       setLoading(false);
     };
@@ -97,7 +97,7 @@ export default function RestaurantListScreen({ navigation }: any) {
       {/* Filters */}
       <View style={styles.filtersRow}>
         <View style={styles.filter}>
-          <Text style={styles.filterLabel}>Rating</Text>
+          <Text style={styles.filterLabel}></Text>
           <View style={styles.dropdownWrapper}>
             <Text style={styles.dropdownLabel}>
               {ratingFilter ? `${ratingFilter}+` : "Select rating"}
@@ -118,7 +118,7 @@ export default function RestaurantListScreen({ navigation }: any) {
         </View>
 
         <View style={styles.filter}>
-          <Text style={styles.filterLabel}>Price</Text>
+          <Text style={styles.filterLabel}></Text>
           <View style={styles.dropdownWrapper}>
             <Text style={styles.dropdownLabel}>{priceFilter || "Select price"}</Text>
             <Picker
