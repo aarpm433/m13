@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -22,7 +23,6 @@ export default function OrderHistoryScreen() {
         setError(null);
 
         const response = await fetch("http://localhost:8080/api/orders");
-
         if (!response.ok) throw new Error("Failed to fetch orders");
 
         const data = await response.json();
@@ -85,7 +85,7 @@ export default function OrderHistoryScreen() {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Order Details</Text>
             {selectedOrder && (
-              <>
+              <ScrollView style={{ width: "100%" }}>
                 <Text style={styles.modalText}>
                   <Text style={styles.bold}>Order ID:</Text> #{selectedOrder.id}
                 </Text>
@@ -93,14 +93,25 @@ export default function OrderHistoryScreen() {
                   <Text style={styles.bold}>Status:</Text> {selectedOrder.status}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.bold}>Items:</Text>{" "}
-                  {selectedOrder.items?.length ?? 0}
+                  <Text style={styles.bold}>Restaurant:</Text> {selectedOrder.restaurant_name}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.bold}>Total:</Text> $
-                  {selectedOrder.total?.toFixed(2) ?? "0.00"}
+                  <Text style={styles.bold}>Customer:</Text> {selectedOrder.customer_name}
                 </Text>
-              </>
+
+                <Text style={[styles.modalText, { marginTop: 10, fontWeight: "bold" }]}>
+                  Products:
+                </Text>
+                {selectedOrder.products.map((p: any) => (
+                  <Text key={p.id} style={styles.modalText}>
+                    {p.product_name} × {p.quantity} = ${p.total_cost.toFixed(2)}
+                  </Text>
+                ))}
+
+                <Text style={[styles.modalText, { marginTop: 10, fontWeight: "bold" }]}>
+                  Total: ${selectedOrder.total_cost.toFixed(2)}
+                </Text>
+              </ScrollView>
             )}
             <TouchableOpacity
               style={styles.closeButton}
@@ -147,14 +158,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalBox: {
-    width: "80%",
+    width: "90%",
+    maxHeight: "80%",
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 15 },
-  modalText: { fontSize: 16, marginBottom: 8 },
+  modalText: { fontSize: 16, marginBottom: 6 },
   bold: { fontWeight: "bold" },
   closeButton: {
     backgroundColor: "#ff5733",
@@ -162,6 +174,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     marginTop: 15,
+    alignSelf: "center",
   },
   closeText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
