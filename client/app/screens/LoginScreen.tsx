@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Alert, StyleSheet, Text, ActivityIndicator } from "react-native";
+import { View, TextInput, Button, Alert, StyleSheet, Text, ActivityIndicator, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen({ navigation }: any) {
@@ -62,7 +62,12 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Rocket Food Delivery</Text>
+      <Image source={ require("../../assets/support_materials_13/Images/AppLogoV2.png") } style={{ alignSelf: 'center', marginBottom: 20 }} /> ;
+    <Text style={styles.title}>Welcome Back</Text>
+    <Text style={{ alignSelf: "center", marginBottom: 30, fontSize: 16, color: "#555" }}>
+      Login to Begin
+    </Text>
+
 
       <TextInput
         placeholder="Email"

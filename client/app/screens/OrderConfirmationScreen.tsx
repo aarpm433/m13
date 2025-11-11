@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+
+const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 type OrderItem = {
   id: string;
@@ -22,17 +26,37 @@ export default function OrderConfirmationScreen({ route, navigation }: Props) {
 
   const totalAmount = orderItems.reduce((sum, item) => sum + item.qty * item.price, 0);
 
-  const handleConfirmOrder = () => {
-    setLoading(true);
-    setSuccess(null);
 
     // Simulate API call
-    setTimeout(() => {
-      const isSuccess = Math.random() > 0.3; // 70% chance success for demo
-      setSuccess(isSuccess);
-      setLoading(false);
-    }, 2000);
-  };
+const handleConfirmOrder = async () => {
+  setLoading(true);
+  setSuccess(null);
+
+  try {
+    const token = await AsyncStorage.getItem("userToken");
+
+    const response = await fetch(`${NGROK_URL}/api/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        items: orderItems,
+        total: totalAmount,
+      }),
+    });
+
+    if (!response.ok) throw new Error("Order failed");
+
+    setSuccess(true);
+  } catch (error) {
+    console.error("❌ Error placing order:", error);
+    setSuccess(false);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>

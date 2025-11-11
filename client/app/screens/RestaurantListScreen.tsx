@@ -13,14 +13,14 @@ import { Picker } from "@react-native-picker/picker";
 
 // Map restaurant names to local images
 const imageMap: { [key: string]: any } = {
-  "Mayert-Leannon": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Luettgen, Hayes and Dietrich": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Upton LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Boehm LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Durgan, Bayer and Hills": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Kilback-Doyle": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Kuphal LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Kessler-Gulgowski": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Mayert-Leannon": require("../../assets/support_materials_13/Images/Restaurants/cuisineGreek.jpg"),
+  "Luettgen, Hayes and Dietrich": require("../../assets/support_materials_13/Images/Restaurants/cuisineJapanese.jpg"),
+  "Upton LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisinePasta.jpg"),
+  "Boehm LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisinePizza.jpg"),
+  "Durgan, Bayer and Hills": require("../../assets/support_materials_13/Images/Restaurants/cuisineSoutheast.jpg"),
+  "Kilback-Doyle": require("../../assets/support_materials_13/Images/Restaurants/cuisineViet.jpg"),
+  "Kuphal LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisineGreek.jpg"),
+  "Kessler-Gulgowski": require("../../assets/support_materials_13/Images/Restaurants/cuisineJapanese.jpg"),
 };
 
 
@@ -100,7 +100,7 @@ export default function RestaurantListScreen({ navigation }: any) {
           <Text style={styles.filterLabel}></Text>
           <View style={styles.dropdownWrapper}>
             <Text style={styles.dropdownLabel}>
-              {ratingFilter ? `${ratingFilter}+` : "Select rating"}
+              {ratingFilter ? `${ratingFilter}+` : "-- Select rating -- ⏷"}
             </Text>
             <Picker
               selectedValue={ratingFilter}
@@ -120,7 +120,7 @@ export default function RestaurantListScreen({ navigation }: any) {
         <View style={styles.filter}>
           <Text style={styles.filterLabel}></Text>
           <View style={styles.dropdownWrapper}>
-            <Text style={styles.dropdownLabel}>{priceFilter || "Select price"}</Text>
+            <Text style={styles.dropdownLabel}>{priceFilter || "-- Select price -- ⏷"}</Text>
             <Picker
               selectedValue={priceFilter}
               onValueChange={(value) => setPriceFilter(value)}
