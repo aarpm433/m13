@@ -7,57 +7,84 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function MenuScreen({ route, navigation }: any) {
   const { restaurant } = route.params;
-
-  const initialMenu = [
-    { id: "1", name: "Margherita Pizza", price: 12 },
-    { id: "2", name: "Pepperoni Pizza", price: 14 },
-    { id: "3", name: "Caesar Salad", price: 9 },
-    { id: "4", name: "Garlic Bread", price: 6 },
-  ];
-
-  const [menu, setMenu] = useState(
-    initialMenu.map((item) => ({ ...item, qty: 0 }))
-  );
+  const [menu, setMenu] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [orderLoading, setOrderLoading] = useState(false);
   const [success, setSuccess] = useState<null | boolean>(null);
+  const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
-  useEffect(() => {
-    setMenu(initialMenu.map((item) => ({ ...item, qty: 0 })));
-  }, [restaurant]);
 
-  const increaseQty = (id: string) => {
+useEffect(() => {
+  const fetchMenu = async () => {
+    try {
+      setLoading(true);
+
+      const url = `${NGROK_URL}/api/products?restaurant=${restaurant.id}`;
+      console.log("📡 Fetching menu from:", url);
+
+      const response = await fetch(url);
+      const text = await response.text(); // read as text first
+
+      console.log("🔍 Raw response:", text);
+
+      const data = JSON.parse(text); // then parse JSON manually
+
+      // ✅ Fix: the API returns an array directly, not { data: [...] }
+      if (Array.isArray(data)) {
+        const menuItems = data.map((item: any) => ({
+          id: String(item.id),
+          name: item.name,
+          price: item.cost,
+          qty: 0,
+        }));
+        setMenu(menuItems);
+      } else {
+        console.warn("Unexpected data format:", data);
+      }
+    } catch (error) {
+      console.error("❌ Failed to load menu:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMenu();
+}, [restaurant]);
+
+  const increaseQty = (id: string) =>
     setMenu((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, qty: item.qty + 1 } : item
       )
     );
-  };
 
-  const decreaseQty = (id: string) => {
+  const decreaseQty = (id: string) =>
     setMenu((prev) =>
       prev.map((item) =>
-        item.id === id && item.qty > 0 ? { ...item, qty: item.qty - 1 } : item
+        item.id === id && item.qty > 0
+          ? { ...item, qty: item.qty - 1 }
+          : item
       )
     );
-  };
 
   const totalQty = menu.reduce((sum, item) => sum + item.qty, 0);
   const createOrderDisabled = totalQty === 0;
 
   const handleConfirmOrder = () => {
-    setLoading(true);
+    setOrderLoading(true);
     setSuccess(null);
 
     setTimeout(() => {
       const isSuccess = Math.random() > 0.3;
       setSuccess(isSuccess);
-      setLoading(false);
+      setOrderLoading(false);
     }, 2000);
   };
 
@@ -70,32 +97,41 @@ export default function MenuScreen({ route, navigation }: any) {
 
       <Text style={styles.title}>{restaurant.name} Menu</Text>
 
-      {/* Menu Items */}
-      {menu.map((item) => (
-        <View key={item.id} style={styles.menuItem}>
-          <Image
-            source={require("../../assets/support_materials_13/Images/RestaurantMenu.jpg")}
-            style={styles.itemImage}
-          />
+      {loading ? (
+        <ActivityIndicator size="large" color="#ff5733" />
+      ) : (
+        <ScrollView>
+          {menu.map((item) => (
+            <View key={item.id} style={styles.menuItem}>
+              <Image
+                source={require("../../assets/support_materials_13/Images/RestaurantMenu.jpg")}
+                style={styles.itemImage}
+              />
 
-          <View style={styles.itemDetails}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-          </View>
+              <View style={styles.itemDetails}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+              </View>
 
-          <View style={styles.quantityContainer}>
-            <TouchableOpacity onPress={() => decreaseQty(item.id)}>
-              <Ionicons name="remove-circle-outline" size={28} color="#333" />
-            </TouchableOpacity>
+              <View style={styles.quantityContainer}>
+                <TouchableOpacity onPress={() => decreaseQty(item.id)}>
+                  <Ionicons
+                    name="remove-circle-outline"
+                    size={28}
+                    color="#333"
+                  />
+                </TouchableOpacity>
 
-            <Text style={styles.qtyText}>{item.qty}</Text>
+                <Text style={styles.qtyText}>{item.qty}</Text>
 
-            <TouchableOpacity onPress={() => increaseQty(item.id)}>
-              <Ionicons name="add-circle-outline" size={28} color="#333" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
+                <TouchableOpacity onPress={() => increaseQty(item.id)}>
+                  <Ionicons name="add-circle-outline" size={28} color="#333" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       <TouchableOpacity
         style={[
@@ -139,9 +175,9 @@ export default function MenuScreen({ route, navigation }: any) {
                 .toFixed(2)}
             </Text>
 
-            {loading && <ActivityIndicator size="large" color="#ff5733" />}
+            {orderLoading && <ActivityIndicator size="large" color="#ff5733" />}
 
-            {!loading && success === null && (
+            {!orderLoading && success === null && (
               <TouchableOpacity
                 style={styles.confirmButton}
                 onPress={handleConfirmOrder}
@@ -191,7 +227,6 @@ export default function MenuScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingBottom: 80, backgroundColor: "#fff" },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
-
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -201,27 +236,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-
   itemImage: {
     width: 60,
     height: 60,
     borderRadius: 8,
     marginRight: 10,
   },
-
-  itemDetails: {
-    flex: 1,
-    justifyContent: "center",
-  },
-
+  itemDetails: { flex: 1, justifyContent: "center" },
   itemName: { fontSize: 18, fontWeight: "600" },
   itemPrice: { fontSize: 14, color: "#777" },
-
-  quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
+  quantityContainer: { flexDirection: "row", alignItems: "center" },
   qtyText: { fontSize: 18, marginHorizontal: 10 },
   orderButton: {
     backgroundColor: "#ff5733",
@@ -231,7 +255,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   orderText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
