@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, FlatList, Button } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 
 const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -14,60 +13,65 @@ type OrderItem = {
 };
 
 type Props = {
-  route: { params: { orderItems: OrderItem[] } };
+  route: { params: { orderItems: OrderItem[]; restaurantName: string } };
   navigation: any;
 };
 
 export default function OrderConfirmationScreen({ route, navigation }: Props) {
-  const { orderItems } = route.params;
+  const { orderItems, restaurantName } = route.params;
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<null | boolean>(null);
 
-  const totalAmount = orderItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const totalAmount = orderItems.reduce(
+    (sum, item) => sum + item.qty * item.price,
+    0
+  );
 
+  const handleConfirmOrder = async () => {
+    setLoading(true);
+    setSuccess(null);
 
-    // Simulate API call
-const handleConfirmOrder = async () => {
-  setLoading(true);
-  setSuccess(null);
+    try {
+      const token = await AsyncStorage.getItem("userToken");
 
-  try {
-    const token = await AsyncStorage.getItem("userToken");
+      const response = await fetch(`http://localhost:8080/api/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: orderItems,
+          total: totalAmount,
+          restaurantName,
+        }),
+      });
 
-    const response = await fetch(`${NGROK_URL}/api/orders`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        items: orderItems,
-        total: totalAmount,
-      }),
-    });
+      if (!response.ok) throw new Error("Order failed");
 
-    if (!response.ok) throw new Error("Order failed");
-
-    setSuccess(true);
-  } catch (error) {
-    console.error("❌ Error placing order:", error);
-    setSuccess(false);
-  } finally {
-    setLoading(false);
-  }
-};
+      setSuccess(true);
+    } catch (error) {
+      console.error("❌ Error placing order:", error);
+      setSuccess(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Order Confirmation</Text>
+      <Text style={styles.restaurant}>Restaurant: {restaurantName}</Text>
 
       <FlatList
         data={orderItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.itemRow}>
-            <Text>{item.name} × {item.qty}</Text>
+            <Text>
+              {item.name} × {item.qty}
+            </Text>
             <Text>${(item.price * item.qty).toFixed(2)}</Text>
           </View>
         )}
@@ -93,7 +97,9 @@ const handleConfirmOrder = async () => {
       {success === false && (
         <View style={styles.statusContainer}>
           <Ionicons name="close-circle" size={50} color="red" />
-          <Text style={styles.failureText}>Order Failed. Please try again.</Text>
+          <Text style={styles.failureText}>
+            Order Failed. Please try again.
+          </Text>
           <Button title="Confirm Order" onPress={handleConfirmOrder} />
         </View>
       )}
@@ -103,7 +109,8 @@ const handleConfirmOrder = async () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
+  restaurant: { fontSize: 18, marginBottom: 20 },
   itemRow: {
     flexDirection: "row",
     justifyContent: "space-between",

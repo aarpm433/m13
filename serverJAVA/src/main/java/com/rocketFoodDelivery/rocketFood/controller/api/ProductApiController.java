@@ -30,7 +30,7 @@ public class ProductApiController {
     }
 
     // Handles GET requests to retrieve a list of products
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping
     public ResponseEntity<Object> getProducts(
             @RequestParam(value = "restaurant", required = false) Integer restaurantId) {
         List<ApiProductDTO> productDtos;

@@ -18,36 +18,39 @@ export default function MenuScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [orderLoading, setOrderLoading] = useState(false);
   const [success, setSuccess] = useState<null | boolean>(null);
-  const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
-
-useEffect(() => {
   const fetchMenu = async () => {
     try {
       setLoading(true);
 
-      const url = `${NGROK_URL}/api/products?restaurant=${restaurant.id}`;
+      const url = `http://localhost:8080/api/products?restaurant=${restaurant.id}`;
       console.log("📡 Fetching menu from:", url);
 
-      const response = await fetch(url);
-      const text = await response.text(); // read as text first
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
 
-      console.log("🔍 Raw response:", text);
-
-      const data = JSON.parse(text); // then parse JSON manually
-
-      // ✅ Fix: the API returns an array directly, not { data: [...] }
-      if (Array.isArray(data)) {
-        const menuItems = data.map((item: any) => ({
-          id: String(item.id),
-          name: item.name,
-          price: item.cost,
-          qty: 0,
-        }));
-        setMenu(menuItems);
-      } else {
-        console.warn("Unexpected data format:", data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log("✅ Parsed response:", result);
+
+      const data = Array.isArray(result) ? result : result.data;
+
+      if (!Array.isArray(data)) {
+        console.error("Unexpected data format:", data);
+        setMenu([]);
+        return;
+      }
+
+      const menuItems = data.map((item: any) => ({
+        id: String(item.id),
+        name: item.name,
+        price: item.cost ?? 10,
+        qty: 0,
+      }));
+
+      setMenu(menuItems);
     } catch (error) {
       console.error("❌ Failed to load menu:", error);
     } finally {
@@ -55,8 +58,10 @@ useEffect(() => {
     }
   };
 
-  fetchMenu();
-}, [restaurant]);
+  // ✅ Properly use useEffect to fetch menu once
+  useEffect(() => {
+    fetchMenu();
+  }, [restaurant]);
 
   const increaseQty = (id: string) =>
     setMenu((prev) =>
