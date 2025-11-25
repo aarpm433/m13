@@ -13,14 +13,14 @@ import { Picker } from "@react-native-picker/picker";
 
 // Map restaurant names to local images
 const imageMap: { [key: string]: any } = {
-  "Mayert-Leannon": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Luettgen, Hayes and Dietrich": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Upton LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Boehm LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Durgan, Bayer and Hills": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Kilback-Doyle": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Kuphal LLC": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-  "Kessler-Gulgowski": require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+  "Mayert-Leannon": require("../../assets/support_materials_13/Images/Restaurants/cuisineGreek.jpg"),
+  "Luettgen, Hayes and Dietrich": require("../../assets/support_materials_13/Images/Restaurants/cuisineJapanese.jpg"),
+  "Upton LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisinePasta.jpg"),
+  "Boehm LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisinePizza.jpg"),
+  "Durgan, Bayer and Hills": require("../../assets/support_materials_13/Images/Restaurants/cuisineSoutheast.jpg"),
+  "Kilback-Doyle": require("../../assets/support_materials_13/Images/Restaurants/cuisineViet.jpg"),
+  "Kuphal LLC": require("../../assets/support_materials_13/Images/Restaurants/cuisineGreek.jpg"),
+  "Kessler-Gulgowski": require("../../assets/support_materials_13/Images/Restaurants/cuisineJapanese.jpg"),
 };
 
 
@@ -41,38 +41,46 @@ export default function RestaurantListScreen({ navigation }: any) {
     setColumns(width >= 900 ? 3 : width >= 420 ? 2 : 1);
   }, [width]);
 
-  useEffect(() => {
-    // Simulate fetching restaurants
-    const fetchRestaurants = async () => {
+useEffect(() => {
+  const fetchRestaurants = async () => {
+    try {
       setLoading(true);
 
-      const data = [
-        { id: 1, name: "Mayert-Leannon", rating: 3, price_range: 3, active: true },
-        { id: 2, name: "Luettgen, Hayes and Dietrich", rating: 3, price_range: 1, active: true },
-        { id: 3, name: "Upton LLC", rating: 4, price_range: 1, active: true },
-        { id: 4, name: "Boehm LLC", rating: 4, price_range: 3, active: true },
-        { id: 5, name: "Durgan, Bayer and Hills", rating: 3, price_range: 3, active: true },
-        { id: 6, name: "Kilback-Doyle", rating: 3, price_range: 2, active: true },
-        { id: 7, name: "Kuphal LLC", rating: 4, price_range: 1, active: true },
-        { id: 8, name: "Kessler-Gulgowski", rating: 3, price_range: 2, active: true },
-      ];
+      const response = await fetch("http://localhost:8080/api/restaurants", {
+        headers: { Accept: "application/json" },
+      });
 
-    setRestaurants(
-      data.map((r) => ({
-        id: r.id.toString(),
-        name: r.name,
-        rating: r.rating,
-        price: "$".repeat(r.price_range),
-        active: r.active,
-        imagePath: imageMap[r.name] || require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
-      }))
-    );
+      if (!response.ok) {
+        console.error("❌ Failed to fetch restaurants:", response.status, response.statusText);
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
 
+      const result = await response.json();
+
+      // Adapt to your backend JSON structure:
+      // Either result.data (if ResponseBuilder wraps it), or result directly
+      const data = Array.isArray(result.data) ? result.data : result;
+
+      setRestaurants(
+        data.map((r: any) => ({
+          id: r.id.toString(),
+          name: r.name,
+          rating: r.rating ?? 3,
+          price: "$".repeat(r.price_range ?? 1),
+          active: r.active ?? true,
+          imagePath: imageMap[r.name] || require("../../assets/support_materials_13/Images/RestaurantMenu.jpg"),
+        }))
+      );
+    } catch (error) {
+      console.error("🔥 Error fetching restaurants:", error);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
-    fetchRestaurants();
-  }, []);
+  fetchRestaurants();
+}, []);
+
 
   const filtered = useMemo(() => {
     return restaurants.filter((r) => {
@@ -100,7 +108,7 @@ export default function RestaurantListScreen({ navigation }: any) {
           <Text style={styles.filterLabel}></Text>
           <View style={styles.dropdownWrapper}>
             <Text style={styles.dropdownLabel}>
-              {ratingFilter ? `${ratingFilter}+` : "Select rating"}
+              {ratingFilter ? `${ratingFilter}+` : "-- Select rating -- ⏷"}
             </Text>
             <Picker
               selectedValue={ratingFilter}
@@ -120,7 +128,7 @@ export default function RestaurantListScreen({ navigation }: any) {
         <View style={styles.filter}>
           <Text style={styles.filterLabel}></Text>
           <View style={styles.dropdownWrapper}>
-            <Text style={styles.dropdownLabel}>{priceFilter || "Select price"}</Text>
+            <Text style={styles.dropdownLabel}>{priceFilter || "-- Select price -- ⏷"}</Text>
             <Picker
               selectedValue={priceFilter}
               onValueChange={(value) => setPriceFilter(value)}

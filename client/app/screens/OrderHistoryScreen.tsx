@@ -1,50 +1,77 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Modal,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function OrderHistoryScreen() {
-  // Example order data
-  const [orders] = useState([
-    { id: "001", status: "Delivered", total: 32.5, items: 3 },
-    { id: "002", status: "Processing", total: 18.0, items: 2 },
-    { id: "003", status: "Cancelled", total: 25.99, items: 4 },
-  ]);
-
+  const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch("http://localhost:8080/api/orders");
+        if (!response.ok) throw new Error("Failed to fetch orders");
+
+        const data = await response.json();
+        setOrders(data);
+      } catch (err: any) {
+        console.error("❌ Failed to load orders:", err);
+        setError("Unable to load your orders. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Order History</Text>
 
-      {/* Table Headers */}
-      <View style={styles.tableHeader}>
-        <Text style={[styles.cell, styles.headerText]}>Order</Text>
-        <Text style={[styles.cell, styles.headerText]}>Status</Text>
-        <Text style={[styles.cell, styles.headerText]}>View</Text>
-      </View>
+      {loading && <ActivityIndicator size="large" color="#ff5733" />}
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
-      {/* Table Rows */}
-      {orders.map((order) => (
-        <View key={order.id} style={styles.tableRow}>
-          <Text style={styles.cell}>#{order.id}</Text>
-          <Text style={[styles.cell, styles.status]}>{order.status}</Text>
-          <TouchableOpacity
-            style={styles.viewButton}
-            onPress={() => setSelectedOrder(order)}
-          >
-            <Ionicons name="eye-outline" size={22} color="#ff5733" />
-          </TouchableOpacity>
-        </View>
-      ))}
-
-      {orders.length === 0 && (
+      {!loading && !error && orders.length === 0 && (
         <Text style={styles.emptyText}>No past orders yet.</Text>
+      )}
+
+      {!loading && !error && orders.length > 0 && (
+        <>
+          {/* Table Headers */}
+          <View style={styles.tableHeader}>
+            <Text style={[styles.cell, styles.headerText]}>Order</Text>
+            <Text style={[styles.cell, styles.headerText]}>Status</Text>
+            <Text style={[styles.cell, styles.headerText]}>View</Text>
+          </View>
+
+          {/* Table Rows */}
+          {orders.map((order) => (
+            <View key={order.id} style={styles.tableRow}>
+              <Text style={styles.cell}>#{order.id}</Text>
+              <Text style={[styles.cell, styles.status]}>{order.status}</Text>
+              <TouchableOpacity
+                style={styles.viewButton}
+                onPress={() => setSelectedOrder(order)}
+              >
+                <Ionicons name="eye-outline" size={22} color="#ff5733" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </>
       )}
 
       {/* Modal for Order Details */}
@@ -58,7 +85,7 @@ export default function OrderHistoryScreen() {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Order Details</Text>
             {selectedOrder && (
-              <>
+              <ScrollView style={{ width: "100%" }}>
                 <Text style={styles.modalText}>
                   <Text style={styles.bold}>Order ID:</Text> #{selectedOrder.id}
                 </Text>
@@ -66,13 +93,25 @@ export default function OrderHistoryScreen() {
                   <Text style={styles.bold}>Status:</Text> {selectedOrder.status}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.bold}>Items:</Text> {selectedOrder.items}
+                  <Text style={styles.bold}>Restaurant:</Text> {selectedOrder.restaurant_name}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.bold}>Total:</Text> $
-                  {selectedOrder.total.toFixed(2)}
+                  <Text style={styles.bold}>Customer:</Text> {selectedOrder.customer_name}
                 </Text>
-              </>
+
+                <Text style={[styles.modalText, { marginTop: 10, fontWeight: "bold" }]}>
+                  Products:
+                </Text>
+                {selectedOrder.products.map((p: any) => (
+                  <Text key={p.id} style={styles.modalText}>
+                    {p.product_name} × {p.quantity} = ${p.total_cost.toFixed(2)}
+                  </Text>
+                ))}
+
+                <Text style={[styles.modalText, { marginTop: 10, fontWeight: "bold" }]}>
+                  Total: ${selectedOrder.total_cost.toFixed(2)}
+                </Text>
+              </ScrollView>
             )}
             <TouchableOpacity
               style={styles.closeButton}
@@ -90,7 +129,7 @@ export default function OrderHistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-
+  errorText: { color: "red", textAlign: "center", marginVertical: 10 },
   tableHeader: {
     flexDirection: "row",
     borderBottomWidth: 1,
@@ -105,22 +144,10 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
     paddingVertical: 8,
   },
-  cell: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-  },
-  headerText: {
-    fontWeight: "bold",
-    color: "#333",
-  },
-  status: {
-    color: "#555",
-  },
-  viewButton: {
-    flex: 1,
-    alignItems: "center",
-  },
+  cell: { flex: 1, textAlign: "center", fontSize: 16 },
+  headerText: { fontWeight: "bold", color: "#333" },
+  status: { color: "#555" },
+  viewButton: { flex: 1, alignItems: "center" },
   emptyText: { textAlign: "center", marginTop: 20, color: "#777" },
 
   // Modal Styles
@@ -131,14 +158,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalBox: {
-    width: "80%",
+    width: "90%",
+    maxHeight: "80%",
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 15 },
-  modalText: { fontSize: 16, marginBottom: 8 },
+  modalText: { fontSize: 16, marginBottom: 6 },
   bold: { fontWeight: "bold" },
   closeButton: {
     backgroundColor: "#ff5733",
@@ -146,6 +174,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     marginTop: 15,
+    alignSelf: "center",
   },
   closeText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });

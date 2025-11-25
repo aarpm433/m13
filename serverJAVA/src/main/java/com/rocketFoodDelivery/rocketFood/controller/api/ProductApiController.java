@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,6 +17,7 @@ import java.util.List;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiProductDTO;
 import com.rocketFoodDelivery.rocketFood.models.Product;
 import com.rocketFoodDelivery.rocketFood.service.ProductService;
+import com.twilio.rest.api.v2010.account.message.Media;
 
 @RestController
 @RequestMapping("/api/products")

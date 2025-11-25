@@ -12,7 +12,7 @@ interface MainLayoutProps {
 export default function MainLayout({ children, hideHeader = false }: MainLayoutProps) {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { width } = useWindowDimensions();
-  const footerHeight = Math.max(56, Math.round(width * 0.11));
+  const footerHeight = 10; // Adjust if you have a footer
 
   return (
     <SafeAreaView style={styles.safe}>

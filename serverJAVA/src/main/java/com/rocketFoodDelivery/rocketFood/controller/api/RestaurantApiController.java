@@ -6,6 +6,8 @@ import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import com.rocketFoodDelivery.rocketFood.exception.*;
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import org.springframework.http.MediaType;
+
 
 import jakarta.validation.Valid;
 

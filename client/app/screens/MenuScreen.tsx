@@ -7,57 +7,95 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  ScrollView,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function MenuScreen({ route, navigation }: any) {
   const { restaurant } = route.params;
-
-  const initialMenu = [
-    { id: "1", name: "Margherita Pizza", price: 12 },
-    { id: "2", name: "Pepperoni Pizza", price: 14 },
-    { id: "3", name: "Caesar Salad", price: 9 },
-    { id: "4", name: "Garlic Bread", price: 6 },
-  ];
-
-  const [menu, setMenu] = useState(
-    initialMenu.map((item) => ({ ...item, qty: 0 }))
-  );
+  const [menu, setMenu] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [orderLoading, setOrderLoading] = useState(false);
   const [success, setSuccess] = useState<null | boolean>(null);
+  const [useEmail, setUseEmail] = useState(false);
+  const [usePhone, setUsePhone] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
+
+  const fetchMenu = async () => {
+    try {
+      setLoading(true);
+
+      const url = `http://localhost:8080/api/products?restaurant=${restaurant.id}`;
+      console.log("📡 Fetching menu from:", url);
+
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Parsed response:", result);
+
+      const data = Array.isArray(result) ? result : result.data;
+
+      if (!Array.isArray(data)) {
+        console.error("Unexpected data format:", data);
+        setMenu([]);
+        return;
+      }
+
+      const menuItems = data.map((item: any) => ({
+        id: String(item.id),
+        name: item.name,
+        price: item.cost ?? 10,
+        qty: 0,
+      }));
+
+      setMenu(menuItems);
+    } catch (error) {
+      console.error("❌ Failed to load menu:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Properly use useEffect to fetch menu once
   useEffect(() => {
-    setMenu(initialMenu.map((item) => ({ ...item, qty: 0 })));
+    fetchMenu();
   }, [restaurant]);
 
-  const increaseQty = (id: string) => {
+  const increaseQty = (id: string) =>
     setMenu((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, qty: item.qty + 1 } : item
       )
     );
-  };
 
-  const decreaseQty = (id: string) => {
+  const decreaseQty = (id: string) =>
     setMenu((prev) =>
       prev.map((item) =>
-        item.id === id && item.qty > 0 ? { ...item, qty: item.qty - 1 } : item
+        item.id === id && item.qty > 0
+          ? { ...item, qty: item.qty - 1 }
+          : item
       )
     );
-  };
 
   const totalQty = menu.reduce((sum, item) => sum + item.qty, 0);
   const createOrderDisabled = totalQty === 0;
 
   const handleConfirmOrder = () => {
-    setLoading(true);
+    setOrderLoading(true);
     setSuccess(null);
 
     setTimeout(() => {
       const isSuccess = Math.random() > 0.3;
       setSuccess(isSuccess);
-      setLoading(false);
+      setOrderLoading(false);
     }, 2000);
   };
 
@@ -70,32 +108,41 @@ export default function MenuScreen({ route, navigation }: any) {
 
       <Text style={styles.title}>{restaurant.name} Menu</Text>
 
-      {/* Menu Items */}
-      {menu.map((item) => (
-        <View key={item.id} style={styles.menuItem}>
-          <Image
-            source={require("../../assets/support_materials_13/Images/RestaurantMenu.jpg")}
-            style={styles.itemImage}
-          />
+      {loading ? (
+        <ActivityIndicator size="large" color="#ff5733" />
+      ) : (
+        <ScrollView>
+          {menu.map((item) => (
+            <View key={item.id} style={styles.menuItem}>
+              <Image
+                source={require("../../assets/support_materials_13/Images/RestaurantMenu.jpg")}
+                style={styles.itemImage}
+              />
 
-          <View style={styles.itemDetails}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-          </View>
+              <View style={styles.itemDetails}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+              </View>
 
-          <View style={styles.quantityContainer}>
-            <TouchableOpacity onPress={() => decreaseQty(item.id)}>
-              <Ionicons name="remove-circle-outline" size={28} color="#333" />
-            </TouchableOpacity>
+              <View style={styles.quantityContainer}>
+                <TouchableOpacity onPress={() => decreaseQty(item.id)}>
+                  <Ionicons
+                    name="remove-circle-outline"
+                    size={28}
+                    color="#333"
+                  />
+                </TouchableOpacity>
 
-            <Text style={styles.qtyText}>{item.qty}</Text>
+                <Text style={styles.qtyText}>{item.qty}</Text>
 
-            <TouchableOpacity onPress={() => increaseQty(item.id)}>
-              <Ionicons name="add-circle-outline" size={28} color="#333" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
+                <TouchableOpacity onPress={() => increaseQty(item.id)}>
+                  <Ionicons name="add-circle-outline" size={28} color="#333" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       <TouchableOpacity
         style={[
@@ -131,7 +178,66 @@ export default function MenuScreen({ route, navigation }: any) {
                 </Text>
               ))}
 
+              {/* Contact Options */}
+              <View style={{ marginTop: 20 }}>
+                <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
+                  Choose Contact Method:
+                </Text>
+
+                {/* Email option */}
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  onPress={() => setUseEmail(!useEmail)}
+                >
+                  <Ionicons
+                    name={useEmail ? "checkbox-outline" : "square-outline"}
+                    size={24}
+                    color="#333"
+                  />
+                  <Text style={styles.optionLabel}>Email</Text>
+                </TouchableOpacity>
+
+                {useEmail && (
+                  <View style={styles.inputBox}>
+                    <Text style={styles.inputLabel}>Enter your email:</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="example@email.com"
+                      keyboardType="email-address"
+                    />
+                  </View>
+                )}
+
+                {/* Phone option */}
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  onPress={() => setUsePhone(!usePhone)}
+                >
+                  <Ionicons
+                    name={usePhone ? "checkbox-outline" : "square-outline"}
+                    size={24}
+                    color="#333"
+                  />
+                  <Text style={styles.optionLabel}>Phone Number</Text>
+                </TouchableOpacity>
+
+                {usePhone && (
+                  <View style={styles.inputBox}>
+                    <Text style={styles.inputLabel}>Enter your phone number:</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={phone.toString()}
+                      onChangeText={setPhone}
+                      placeholder="123-456-7890"
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                )}
+              </View>
             <Text style={styles.total}>
+
               Total: $
               {menu
                 .filter((item) => item.qty > 0)
@@ -139,9 +245,9 @@ export default function MenuScreen({ route, navigation }: any) {
                 .toFixed(2)}
             </Text>
 
-            {loading && <ActivityIndicator size="large" color="#ff5733" />}
+            {orderLoading && <ActivityIndicator size="large" color="#ff5733" />}
 
-            {!loading && success === null && (
+            {!orderLoading && success === null && (
               <TouchableOpacity
                 style={styles.confirmButton}
                 onPress={handleConfirmOrder}
@@ -191,7 +297,6 @@ export default function MenuScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingBottom: 80, backgroundColor: "#fff" },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
-
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -201,27 +306,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-
   itemImage: {
     width: 60,
     height: 60,
     borderRadius: 8,
     marginRight: 10,
   },
-
-  itemDetails: {
-    flex: 1,
-    justifyContent: "center",
-  },
-
+  itemDetails: { flex: 1, justifyContent: "center" },
   itemName: { fontSize: 18, fontWeight: "600" },
   itemPrice: { fontSize: 14, color: "#777" },
-
-  quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
+  quantityContainer: { flexDirection: "row", alignItems: "center" },
   qtyText: { fontSize: 18, marginHorizontal: 10 },
   orderButton: {
     backgroundColor: "#ff5733",
@@ -231,7 +325,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   orderText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -265,4 +358,36 @@ const styles = StyleSheet.create({
   statusContainer: { alignItems: "center", marginTop: 15 },
   successText: { color: "green", fontSize: 18, marginTop: 10 },
   failureText: { color: "red", fontSize: 18, marginTop: 10, marginBottom: 5 },
+
+  optionRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginVertical: 8,
+},
+
+optionLabel: {
+  fontSize: 16,
+  marginLeft: 10,
+},
+
+inputBox: {
+  marginLeft: 35,
+  marginVertical: 10,
+},
+
+inputLabel: {
+  fontSize: 14,
+  color: "#444",
+  marginBottom: 5,
+},
+
+input: {
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+  padding: 10,
+},
+
+  
+
 });
