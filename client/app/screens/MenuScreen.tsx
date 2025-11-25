@@ -8,6 +8,7 @@ import {
   Modal,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -18,6 +19,11 @@ export default function MenuScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [orderLoading, setOrderLoading] = useState(false);
   const [success, setSuccess] = useState<null | boolean>(null);
+  const [useEmail, setUseEmail] = useState(false);
+  const [usePhone, setUsePhone] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
 
   const fetchMenu = async () => {
     try {
@@ -172,7 +178,66 @@ export default function MenuScreen({ route, navigation }: any) {
                 </Text>
               ))}
 
+              {/* Contact Options */}
+              <View style={{ marginTop: 20 }}>
+                <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
+                  Choose Contact Method:
+                </Text>
+
+                {/* Email option */}
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  onPress={() => setUseEmail(!useEmail)}
+                >
+                  <Ionicons
+                    name={useEmail ? "checkbox-outline" : "square-outline"}
+                    size={24}
+                    color="#333"
+                  />
+                  <Text style={styles.optionLabel}>Email</Text>
+                </TouchableOpacity>
+
+                {useEmail && (
+                  <View style={styles.inputBox}>
+                    <Text style={styles.inputLabel}>Enter your email:</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="example@email.com"
+                      keyboardType="email-address"
+                    />
+                  </View>
+                )}
+
+                {/* Phone option */}
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  onPress={() => setUsePhone(!usePhone)}
+                >
+                  <Ionicons
+                    name={usePhone ? "checkbox-outline" : "square-outline"}
+                    size={24}
+                    color="#333"
+                  />
+                  <Text style={styles.optionLabel}>Phone Number</Text>
+                </TouchableOpacity>
+
+                {usePhone && (
+                  <View style={styles.inputBox}>
+                    <Text style={styles.inputLabel}>Enter your phone number:</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={phone.toString()}
+                      onChangeText={setPhone}
+                      placeholder="123-456-7890"
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                )}
+              </View>
             <Text style={styles.total}>
+
               Total: $
               {menu
                 .filter((item) => item.qty > 0)
@@ -293,4 +358,36 @@ const styles = StyleSheet.create({
   statusContainer: { alignItems: "center", marginTop: 15 },
   successText: { color: "green", fontSize: 18, marginTop: 10 },
   failureText: { color: "red", fontSize: 18, marginTop: 10, marginBottom: 5 },
+
+  optionRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginVertical: 8,
+},
+
+optionLabel: {
+  fontSize: 16,
+  marginLeft: 10,
+},
+
+inputBox: {
+  marginLeft: 35,
+  marginVertical: 10,
+},
+
+inputLabel: {
+  fontSize: 14,
+  color: "#444",
+  marginBottom: 5,
+},
+
+input: {
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+  padding: 10,
+},
+
+  
+
 });

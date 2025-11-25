@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, Button } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Button,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 type OrderItem = {
   id: string;
@@ -22,6 +29,11 @@ export default function OrderConfirmationScreen({ route, navigation }: Props) {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<null | boolean>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
+  const [sendSMS, setSendSMS] = useState(false);
+  const [emailAddress, setEmailAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const totalAmount = orderItems.reduce(
     (sum, item) => sum + item.qty * item.price,
@@ -29,8 +41,13 @@ export default function OrderConfirmationScreen({ route, navigation }: Props) {
   );
 
   const handleConfirmOrder = async () => {
+    setModalVisible(true); // Open modal for email/SMS options
+  };
+
+  const handleSendOrder = async () => {
     setLoading(true);
     setSuccess(null);
+    setModalVisible(false);
 
     try {
       const token = await AsyncStorage.getItem("userToken");
@@ -45,6 +62,8 @@ export default function OrderConfirmationScreen({ route, navigation }: Props) {
           items: orderItems,
           total: totalAmount,
           restaurantName,
+          sendEmail: sendEmail ? emailAddress : null,
+          sendSMS: sendSMS ? phoneNumber : null,
         }),
       });
 
@@ -103,6 +122,63 @@ export default function OrderConfirmationScreen({ route, navigation }: Props) {
           <Button title="Confirm Order" onPress={handleConfirmOrder} />
         </View>
       )}
+
+      {/* Modal for email/SMS confirmation */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Receive your order confirmation
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Would you like to receive your order confirmation by email and/or
+              text?
+            </Text>
+
+            {/* Email option */}
+            <View style={styles.optionRow}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setSendEmail(!sendEmail)}
+              >
+                {sendEmail && <Ionicons name="checkmark" size={20} color="#fff" />}
+              </TouchableOpacity>
+              <TextInput
+                placeholder="Enter email"
+                value={emailAddress}
+                onChangeText={setEmailAddress}
+                style={styles.input}
+                editable={sendEmail}
+              />
+            </View>
+
+            {/* SMS option */}
+            <View style={styles.optionRow}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setSendSMS(!sendSMS)}
+              >
+                {sendSMS && <Ionicons name="checkmark" size={20} color="#fff" />}
+              </TouchableOpacity>
+              <TextInput
+                placeholder="Enter phone number"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                style={styles.input}
+                editable={sendSMS}
+              />
+            </View>
+
+            <Button title="Send Order" onPress={handleSendOrder} />
+            <Button title="Cancel" onPress={() => setModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -120,4 +196,35 @@ const styles = StyleSheet.create({
   statusContainer: { alignItems: "center", marginTop: 20 },
   successText: { color: "green", fontSize: 18, marginTop: 10 },
   failureText: { color: "red", fontSize: 18, marginTop: 10, marginBottom: 10 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  modalSubtitle: { fontSize: 16, marginBottom: 20 },
+  optionRow: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    backgroundColor: "#DA583B",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+  },
 });
