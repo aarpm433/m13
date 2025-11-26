@@ -24,6 +24,9 @@ export default function MenuScreen({ route, navigation }: any) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
+  const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+
+
 
   const fetchMenu = async () => {
     try {

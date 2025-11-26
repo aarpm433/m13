@@ -35,6 +35,9 @@ export default function OrderConfirmationScreen({ route, navigation }: Props) {
   const [emailAddress, setEmailAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
 
+  const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+
+
   const totalAmount = orderItems.reduce(
     (sum, item) => sum + item.qty * item.price,
     0
