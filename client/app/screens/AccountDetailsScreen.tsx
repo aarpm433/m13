@@ -11,22 +11,15 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
 export default function AccountDetailsScreen({ route }: any) {
-  const accountType =
-    route?.params?.accountType ?? route?.params?.userType ?? "customer";
+  const accountType = route?.params?.accountType ?? "customer";
+  const typeLabel = accountType === "courier" ? "Courier" : "Customer";
 
-  const typeLabel =
-    accountType === "courier" ? "Courier" : "Customer";
-
-  const [userEmail, setUserEmail] = useState("");
+  const [primaryEmail, setPrimaryEmail] = useState("");
   const [typeEmail, setTypeEmail] = useState("");
   const [typePhone, setTypePhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
-
 
   // -----------------------
   // FETCH ACCOUNT DETAILS
@@ -48,10 +41,16 @@ export default function AccountDetailsScreen({ route }: any) {
 
         const data = await res.json();
 
-        setUserEmail(data.email ?? "");
+        // Map fields based on role
+        setPrimaryEmail(data.primaryEmail ?? "");
 
-        setTypeEmail(data.type_email ?? "");
-        setTypePhone(data.type_phone ?? "");
+        if (accountType === "courier") {
+          setTypeEmail(data.courierEmail ?? "");
+          setTypePhone(data.courierPhone ?? "");
+        } else {
+          setTypeEmail(data.customerEmail ?? "");
+          setTypePhone(data.customerPhone ?? "");
+        }
       } catch (err) {
         Alert.alert("Connection Error", "Cannot reach server.");
       } finally {
@@ -66,15 +65,16 @@ export default function AccountDetailsScreen({ route }: any) {
   // SAVE ACCOUNT DETAILS
   // -----------------------
   const updateDetails = async () => {
+    setSaving(true);
     try {
       const userID = await AsyncStorage.getItem("userID");
       if (!userID) return;
 
-      const body = {
-        type: accountType,
-        type_email: typeEmail,
-        type_phone: typePhone,
-      };
+      // Role-specific payload
+      const body =
+        accountType === "courier"
+          ? { courierEmail: typeEmail, courierPhone: typePhone }
+          : { customerEmail: typeEmail, customerPhone: typePhone };
 
       const res = await fetch(
         `http://localhost:8080/api/account/${userID}?type=${accountType}`,
@@ -98,24 +98,33 @@ export default function AccountDetailsScreen({ route }: any) {
     }
   };
 
-  if (loading)
+  // -----------------------
+  // LOADING STATE
+  // -----------------------
+  if (loading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#DA583B" />
       </View>
     );
+  }
 
+  // -----------------------
+  // UI
+  // -----------------------
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>{typeLabel} Account Details</Text>
 
+      {/* Read-only primary email */}
       <View style={styles.section}>
         <Text style={styles.label}>User Email (read-only)</Text>
         <View style={styles.readOnlyInput}>
-          <Text>{userEmail}</Text>
+          <Text>{primaryEmail}</Text>
         </View>
       </View>
 
+      {/* Editable type email */}
       <View style={styles.section}>
         <Text style={styles.label}>{typeLabel} Email</Text>
         <TextInput
@@ -125,6 +134,7 @@ export default function AccountDetailsScreen({ route }: any) {
         />
       </View>
 
+      {/* Editable type phone */}
       <View style={styles.section}>
         <Text style={styles.label}>{typeLabel} Phone</Text>
         <TextInput
@@ -134,19 +144,24 @@ export default function AccountDetailsScreen({ route }: any) {
         />
       </View>
 
+      {/* Save button */}
       <View style={styles.buttonContainer}>
         <Button
           title={saving ? "Saving..." : "Save Changes"}
           onPress={updateDetails}
           color="#DA583B"
+          disabled={saving}
         />
       </View>
     </ScrollView>
   );
 }
 
+// -----------------------
+// STYLES
+// -----------------------
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
   centerContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
   section: { marginBottom: 20 },
