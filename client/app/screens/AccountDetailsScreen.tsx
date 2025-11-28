@@ -64,50 +64,42 @@ export default function AccountDetailsScreen({ route }: any) {
   // -----------------------
   // SAVE ACCOUNT DETAILS
   // -----------------------
-  const updateDetails = async () => {
-    setSaving(true);
-    try {
-      const userID = await AsyncStorage.getItem("userID");
-      if (!userID) return;
+const updateDetails = async () => {
+  setSaving(true);
+  try {
+    const userID = await AsyncStorage.getItem("userID");
+    if (!userID) return;
 
-      // Role-specific payload
-      const body =
-        accountType === "courier"
-          ? { courierEmail: typeEmail, courierPhone: typePhone }
-          : { customerEmail: typeEmail, customerPhone: typePhone };
+    // Role-specific payload
+    const body =
+      accountType === "courier"
+        ? { courierEmail: typeEmail, courierPhone: typePhone }
+        : { customerEmail: typeEmail, customerPhone: typePhone };
 
-      const res = await fetch(
-        `http://localhost:8080/api/account/${userID}?type=${accountType}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
+    // courier = PATCH | customer = POST
+    const method = accountType === "courier" ? "PATCH" : "POST";
 
-      if (!res.ok) {
-        Alert.alert("Error", "Failed to update details.");
-        return;
+    const res = await fetch(
+      `http://localhost:8080/api/account/${userID}?type=${accountType}`,
+      {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       }
-
-      Alert.alert("Success", "Account updated.");
-    } catch (err) {
-      Alert.alert("Error", "Unable to update details.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // -----------------------
-  // LOADING STATE
-  // -----------------------
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#DA583B" />
-      </View>
     );
+
+    if (!res.ok) {
+      Alert.alert("Error", "Failed to update details.");
+      return;
+    }
+
+    Alert.alert("Success", "Account updated.");
+  } catch (err) {
+    Alert.alert("Error", "Unable to update details.");
+  } finally {
+    setSaving(false);
   }
+};
 
   // -----------------------
   // UI

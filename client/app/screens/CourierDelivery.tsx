@@ -14,9 +14,9 @@ import {
 const NGROK_URL = "https://gary-nonimpressionable-imputedly.ngrok-free.dev";
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#FF6B6B",
-  IN_PROGRESS: "#FFA500",
-  DELIVERED: "#4CAF50",
+  PENDING: "#b42424ff",
+  IN_PROGRESS: "#ffa600ff",
+  DELIVERED: "#0eaf14ff",
 };
 
 const STATUS_FLOW = ["PENDING", "IN_PROGRESS", "DELIVERED"];
@@ -95,30 +95,38 @@ export default function CourierDeliveriesScreen() {
   }
 
   const renderRow = ({ item }: any) => {
-    const color = STATUS_COLORS[item.status] ?? "#777";
+  const currentIndex = STATUS_FLOW.indexOf(item.status);
+  const nextStatus =
+    currentIndex < STATUS_FLOW.length - 1
+      ? STATUS_FLOW[currentIndex + 1]
+      : null;
 
-    return (
-      <View style={styles.row}>
-        <Text style={[styles.cell, { flex: 0.5 }]}>#{item.id}</Text>
-        <Text style={[styles.cell, { flex: 2 }]}>{item.customer_address}</Text>
+  const color = nextStatus ? STATUS_COLORS[nextStatus] : STATUS_COLORS[item.status];
 
-        <TouchableOpacity
-          style={[styles.statusButton, { backgroundColor: color }]}
-          onPress={() => updateStatus(item)}
-          disabled={item.status === "DELIVERED" || updatingStatus}
-        >
-          <Text style={styles.statusText}>{item.status.replace("_", " ")}</Text>
-        </TouchableOpacity>
+  return (
+    <View style={styles.row}>
+      <Text style={[styles.cell, { flex: 0.5 }]}>#{item.id}</Text>
+      <Text style={[styles.cell, { flex: 2 }]}>{item.customer_address}</Text>
 
-        <TouchableOpacity
-          style={styles.viewButton}
-          onPress={() => setSelectedOrder(item)}
-        >
-          <Text style={styles.viewText}>View</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
+      <TouchableOpacity
+        style={[styles.statusButton, { backgroundColor: color }]}
+        onPress={() => updateStatus(item)}
+        disabled={item.status === "DELIVERED" || updatingStatus}
+      >
+        <Text style={styles.statusText}>
+          {nextStatus ? nextStatus.replace("_", " ") : "DONE"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.viewButton}
+        onPress={() => setSelectedOrder(item)}
+      >
+        <Text style={styles.viewText}>View</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
   return (
     <View style={styles.container}>
@@ -148,7 +156,11 @@ export default function CourierDeliveriesScreen() {
             </TouchableOpacity>
 
             {selectedOrder && (
-              <ScrollView>
+              <ScrollView
+                contentContainerStyle={{ paddingBottom: 40, paddingTop: 6 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
                 <Text style={styles.modalTitle}>
                   Restaurant: {selectedOrder.restaurant_name}
                 </Text>
@@ -181,14 +193,24 @@ export default function CourierDeliveriesScreen() {
                 </Text>
 
                 <TouchableOpacity
-                  style={[styles.statusButton, { backgroundColor: STATUS_COLORS[selectedOrder.status] }]}
+                  style={[styles.modalStatusButton, { backgroundColor: (() => {
+                    const currentIndex = STATUS_FLOW.indexOf(selectedOrder.status);
+                    const nextStatus = currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : null;
+                    return nextStatus ? STATUS_COLORS[nextStatus] : STATUS_COLORS[selectedOrder.status];
+                  })() }]}
                   onPress={() => updateStatus(selectedOrder)}
                   disabled={selectedOrder.status === "DELIVERED" || updatingStatus}
                 >
                   {updatingStatus ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.statusText}>Next Step</Text>
+                    <Text style={styles.statusText}>
+                      {(() => {
+                        const currentIndex = STATUS_FLOW.indexOf(selectedOrder.status);
+                        const nextStatus = currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : null;
+                        return nextStatus ? nextStatus.replace("_", " ") : "DONE";
+                      })()}
+                    </Text>
                   )}
                 </TouchableOpacity>
               </ScrollView>
@@ -209,6 +231,19 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     marginBottom: 5,
   },
+
+
+modalStatusButton: {
+  alignSelf: "stretch",   
+  paddingVertical: 12,
+  borderRadius: 8,
+  alignItems: "center",
+  marginTop: 14,
+  marginBottom: 8,
+  minHeight: 48,          
+  justifyContent: "center",
+},
+
   headerCell: { fontWeight: "bold", fontSize: 14, color: "#444" },
   row: {
     flexDirection: "row",
@@ -218,8 +253,8 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
   cell: { fontSize: 14, color: "#333" },
-  statusButton: {
-    flex: 1,
+    statusButton: {
+    flex: 0.25,
     paddingVertical: 6,
     borderRadius: 5,
     alignItems: "center",
@@ -227,10 +262,10 @@ const styles = StyleSheet.create({
   },
   statusText: { color: "#fff", fontWeight: "bold" },
   viewButton: {
-    flex: 0.8,
+    flex: 0.2,
     paddingVertical: 6,
     borderRadius: 5,
-    backgroundColor: "#ff5733",
+    backgroundColor: "#ff5233ff",
     alignItems: "center",
   },
   viewText: { color: "#fff", fontWeight: "bold" },
@@ -245,11 +280,12 @@ const styles = StyleSheet.create({
     width: "100%",
     maxHeight: "90%",
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
+    paddingBottom: 20,
+    borderRadius: 20,
+    padding: 25,
   },
   closeButton: { alignSelf: "flex-end" },
   modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
-  modalText: { fontSize: 16, marginBottom: 6 },
+  modalText: { fontSize: 16, marginBottom: 7 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
