@@ -202,35 +202,67 @@ export default function MenuScreen({ route, navigation }: any) {
               .filter((item) => item.qty > 0)
               .map((item) => (
                 <Text key={item.id}>
-                  {item.name} × {item.qty} = ${(
-                    item.price * item.qty
-                  ).toFixed(2)}
+                  {item.name} × {item.qty} = ${(item.price * item.qty).toFixed(2)}
                 </Text>
               ))}
 
-            {/* Contact Inputs */}
+            {/* CONTACT INFO TOGGLES */}
             <View style={{ marginTop: 20 }}>
               <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
                 Contact Info
               </Text>
 
-              <Text>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="example@email.com"
-                keyboardType="email-address"
-              />
+              {/* EMAIL TOGGLE */}
+              <TouchableOpacity
+                style={styles.toggleRow}
+                onPress={() => setUseEmail(!useEmail)}
+              >
+                <Ionicons
+                  name={useEmail ? "checkbox-outline" : "square-outline"}
+                  size={24}
+                  color="#333"
+                />
+                <Text style={styles.toggleLabel}>Use Email</Text>
+              </TouchableOpacity>
 
-              <Text style={{ marginTop: 10 }}>Phone</Text>
-              <TextInput
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="123-456-7890"
-                keyboardType="phone-pad"
-              />
+              {useEmail && (
+                <>
+                  <Text>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="example@email.com"
+                    keyboardType="email-address"
+                  />
+                </>
+              )}
+
+              {/* PHONE TOGGLE */}
+              <TouchableOpacity
+                style={[styles.toggleRow, { marginTop: 15 }]}
+                onPress={() => setUsePhone(!usePhone)}
+              >
+                <Ionicons
+                  name={usePhone ? "checkbox-outline" : "square-outline"}
+                  size={24}
+                  color="#333"
+                />
+                <Text style={styles.toggleLabel}>Use Phone</Text>
+              </TouchableOpacity>
+
+              {usePhone && (
+                <>
+                  <Text>Phone</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="123-456-7890"
+                    keyboardType="phone-pad"
+                  />
+                </>
+              )}
             </View>
 
             <Text style={styles.total}>
@@ -244,10 +276,7 @@ export default function MenuScreen({ route, navigation }: any) {
             {orderLoading && <ActivityIndicator size="large" color="#ff5733" />}
 
             {!orderLoading && success === null && (
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirmOrder}
-              >
+              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
                 <Text style={styles.confirmText}>Confirm Order</Text>
               </TouchableOpacity>
             )}
@@ -262,13 +291,8 @@ export default function MenuScreen({ route, navigation }: any) {
             {success === false && (
               <View style={styles.statusContainer}>
                 <Ionicons name="close-circle" size={50} color="red" />
-                <Text style={styles.failureText}>
-                  Order Failed. Please try again.
-                </Text>
-                <TouchableOpacity
-                  style={styles.confirmButton}
-                  onPress={handleConfirmOrder}
-                >
+                <Text style={styles.failureText}>Order Failed. Please try again.</Text>
+                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
                   <Text style={styles.confirmText}>Confirm Order</Text>
                 </TouchableOpacity>
               </View>
@@ -315,6 +339,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+  toggleRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 5,
+},
+toggleLabel: {
+  marginLeft: 8,
+  fontSize: 16,
+},
+
   orderText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
   modalBox: { width: "80%", backgroundColor: "#fff", padding: 20, borderRadius: 10 },
