@@ -16,13 +16,15 @@ export default function OrderHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await fetch("http://localhost:8080/api/orders");
+        const response = await fetch(`http://localhost:8080/api/orders`);
         if (!response.ok) throw new Error("Failed to fetch orders");
 
         const data = await response.json();

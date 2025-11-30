@@ -4,13 +4,13 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 export default function Header({ navigation }: any) {
   return (
     <View style={styles.header}>
-      <Image
+      {/* <Image
         source={require("../../assets/support_materials_13/Images/AppLogoV1.png")}
         style={styles.logo}
       />
       <TouchableOpacity style={styles.logoutButton} onPress={() => navigation.replace("Login")}>
         <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }

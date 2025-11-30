@@ -62,6 +62,44 @@ What is the difference between React Native and React?
 
 React is a platform that runs in web browsers which the primary goal being to create user interfaces (UIs) for web apps. It can use HTML, CSS, and JavaScript to render its UI elements, often times it will use CSS for styling and animations. On the other hand, React native is primarily used for developing corss-platform native mobile appliocations for both iOS and Android, these apps run off of mobile devices but can also target the web. 
 
+API descriptions
+
+Account details Screen 
+-      `http://localhost:8080/api/account/${userID}?type=${accountType}`,
+         Trying to fetch the correct account using ID and account type to display information about the Account
+
+Account Selection Screen
+- NO APIs USED
+
+Courier Delivery Screen
+-     http://localhost:8080/api/orders - Fetching all orders for deliveries
+      http://localhost:8080/api/orders/${order.id}/status - posting updates about progress order
+
+Login Screen
+- http://localhost:8080/api/auth - logging in
+
+Menu Screen 
+- http://localhost:8080/api/products?restaurant=${restaurant.id} - fetching all products from restaurants and organizing them by restaurant
+- http://localhost:8080/api/account/${userID} - fetching user information because of the modal requirements (user phone and email)
+
+Order Confirmation Screen
+- http://localhost:8080/api/orders - posting order
+
+
+order History Scrren
+- http://localhost:8080/api/orders - fetching orders
+
+
+Restaurant list screen
+- http://localhost:8080/api/restaurants - fetching restaurants
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,185 +11,166 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
-
 export default function AccountDetailsScreen({ route }: any) {
-  const accountType = route?.params?.accountType || "customer"; // "customer" or "courier"
+  const accountType = route?.params?.accountType ?? "customer";
+  const typeLabel = accountType === "courier" ? "Courier" : "Customer";
 
-  const [userEmail, setUserEmail] = useState("");
+  const [primaryEmail, setPrimaryEmail] = useState("");
   const [typeEmail, setTypeEmail] = useState("");
   const [typePhone, setTypePhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Fetch account details
-  const fetchDetails = async () => {
-    try {
-      setLoading(true);
-      const userID = await AsyncStorage.getItem("userID");
+  // -----------------------
+  // FETCH ACCOUNT DETAILS
+  // -----------------------
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        const userID = await AsyncStorage.getItem("userID");
+        if (!userID) return;
 
-      const response = await fetch(`${NGROK_URL}/api/user/${userID}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+        const url = `http://localhost:8080/api/account/${userID}?type=${accountType}`;
+        const res = await fetch(url);
 
-      if (response.ok) {
-        const data = await response.json();
-        setUserEmail(data.email || "");
+        if (!res.ok) {
+          Alert.alert("Error", "Failed to load account info.");
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+
+        // Map fields based on role
+        setPrimaryEmail(data.primaryEmail ?? "");
 
         if (accountType === "courier") {
-          setTypeEmail(data.courier_email || "");
-          setTypePhone(data.courier_phone || "");
+          setTypeEmail(data.courierEmail ?? "");
+          setTypePhone(data.courierPhone ?? "");
         } else {
-          setTypeEmail(data.customer_email || "");
-          setTypePhone(data.customer_phone || "");
+          setTypeEmail(data.customerEmail ?? "");
+          setTypePhone(data.customerPhone ?? "");
         }
-      } else {
-        Alert.alert("Error", "Failed to fetch account details.");
+      } catch (err) {
+        Alert.alert("Connection Error", "Cannot reach server.");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Fetch error:", error);
-      Alert.alert("Connection Error", "Cannot reach the server.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
     fetchDetails();
   }, [accountType]);
 
-  // Update account details
-  const updateDetails = async () => {
-    try {
-      if (!typeEmail || !typePhone) {
-        Alert.alert("Validation", "Please fill in all fields.");
-        return;
-      }
+  // -----------------------
+  // SAVE ACCOUNT DETAILS
+  // -----------------------
+const updateDetails = async () => {
+  setSaving(true);
+  try {
+    const userID = await AsyncStorage.getItem("userID");
+    if (!userID) return;
 
-      setSaving(true);
-      const userID = await AsyncStorage.getItem("userID");
+    // Role-specific payload
+    const body =
+      accountType === "courier"
+        ? { courierEmail: typeEmail, courierPhone: typePhone }
+        : { customerEmail: typeEmail, customerPhone: typePhone };
 
-      const endpoint =
-        accountType === "courier"
-          ? `http://localhost:8081/api/user/${userID}/courier`
-          : `http://localhost:8081/api/user/${userID}/customer`;
+    // courier = PATCH | customer = POST
+    const method = accountType === "courier" ? "PATCH" : "POST";
 
-      const body =
-        accountType === "courier"
-          ? {
-              courier_email: typeEmail,
-              courier_phone: typePhone,
-            }
-          : {
-              customer_email: typeEmail,
-              customer_phone: typePhone,
-            };
-
-      const response = await fetch(endpoint, {
-        method: "PUT",
+    const res = await fetch(
+      `http://localhost:8080/api/account/${userID}?type=${accountType}`,
+      {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
-        Alert.alert("Success", "Your details have been updated.");
-      } else {
-        Alert.alert("Error", "Failed to update details.");
       }
-    } catch (error) {
-      console.error("Update error:", error);
-      Alert.alert("Connection Error", "Cannot reach the server.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#DA583B" />
-      </View>
     );
+
+    if (!res.ok) {
+      Alert.alert("Error", "Failed to update details.");
+      return;
+    }
+
+    Alert.alert("Success", "Account updated.");
+  } catch (err) {
+    Alert.alert("Error", "Unable to update details.");
+  } finally {
+    setSaving(false);
   }
+};
 
-  const typeLabel =
-    accountType === "courier" ? "Courier" : "Customer";
-
+  // -----------------------
+  // UI
+  // -----------------------
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>{typeLabel} Account Details</Text>
 
-      {/* User Email (Read-only) */}
+      {/* Read-only primary email */}
       <View style={styles.section}>
-        <Text style={styles.label}>User Email (Read-only)</Text>
+        <Text style={styles.label}>User Email (read-only)</Text>
         <View style={styles.readOnlyInput}>
-          <Text style={styles.readOnlyText}>{userEmail}</Text>
+          <Text>{primaryEmail}</Text>
         </View>
       </View>
 
-      {/* Type-specific Email */}
+      {/* Editable type email */}
       <View style={styles.section}>
         <Text style={styles.label}>{typeLabel} Email</Text>
         <TextInput
           style={styles.input}
           value={typeEmail}
           onChangeText={setTypeEmail}
-          placeholder={`Enter ${typeLabel.toLowerCase()} email`}
-          keyboardType="email-address"
-          autoCapitalize="none"
         />
       </View>
 
-      {/* Type-specific Phone */}
+      {/* Editable type phone */}
       <View style={styles.section}>
         <Text style={styles.label}>{typeLabel} Phone</Text>
         <TextInput
           style={styles.input}
           value={typePhone}
           onChangeText={setTypePhone}
-          placeholder={`Enter ${typeLabel.toLowerCase()} phone`}
-          keyboardType="phone-pad"
         />
       </View>
 
-      {/* Save Button */}
+      {/* Save button */}
       <View style={styles.buttonContainer}>
-        {saving ? (
-          <ActivityIndicator size="large" color="#DA583B" />
-        ) : (
-          <Button
-            title="Save Changes"
-            onPress={updateDetails}
-            color="#DA583B"
-          />
-        )}
+        <Button
+          title={saving ? "Saving..." : "Save Changes"}
+          onPress={updateDetails}
+          color="#DA583B"
+          disabled={saving}
+        />
       </View>
     </ScrollView>
   );
 }
 
+// -----------------------
+// STYLES
+// -----------------------
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f5f5f5" },
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
   centerContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 26, fontWeight: "bold", marginBottom: 30, color: "#333" },
-  section: { marginBottom: 24 },
-  label: { fontWeight: "600", marginBottom: 8, color: "#666", fontSize: 14 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  section: { marginBottom: 20 },
+  label: { marginBottom: 6, fontWeight: "600", color: "#666" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 12,
     borderRadius: 8,
     backgroundColor: "#fff",
-    fontSize: 14,
   },
   readOnlyInput: {
     borderWidth: 1,
     borderColor: "#ddd",
     padding: 12,
     borderRadius: 8,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#eee",
   },
-  readOnlyText: { fontSize: 14, color: "#666" },
   buttonContainer: { marginTop: 20, marginBottom: 40 },
 });

@@ -11,6 +11,9 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
+const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+
+
 // Map restaurant names to local images
 const imageMap: { [key: string]: any } = {
   "Mayert-Leannon": require("../../assets/support_materials_13/Images/Restaurants/cuisineGreek.jpg"),
@@ -46,7 +49,7 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:8080/api/restaurants", {
+      const response = await fetch(`http://localhost:8080/api/restaurants`, {
         headers: { Accept: "application/json" },
       });
 

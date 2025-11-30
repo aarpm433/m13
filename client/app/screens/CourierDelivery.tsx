@@ -1,266 +1,221 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
   Modal,
+  ActivityIndicator,
+  FlatList,
   ScrollView,
-  RefreshControl,
+  Alert,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+const NGROK_URL = "https://gary-nonimpressionable-imputedly.ngrok-free.dev";
 
-const STATUS_COLORS = {
-  PENDING: "#FF6B6B",
-  IN_PROGRESS: "#FFA500",
-  DELIVERED: "#4CAF50",
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: "#b42424ff",
+  IN_PROGRESS: "#ffa600ff",
+  DELIVERED: "#0eaf14ff",
 };
 
-const STATUS_ORDER = ["PENDING", "IN_PROGRESS", "DELIVERED"];
+const STATUS_FLOW = ["PENDING", "IN_PROGRESS", "DELIVERED"];
 
 export default function CourierDeliveriesScreen() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  // Fetch all orders (courier sees orders assigned to them)
+  // -------------------------
+  // LOAD ORDERS
+  // -------------------------
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${NGROK_URL}/api/orders`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data || []);
-      } else {
-        Alert.alert("Error", "Failed to fetch orders.");
-      }
-    } catch (error) {
-      console.error("Fetch error:", error);
-      Alert.alert("Connection Error", "Cannot reach the server.");
+      const res = await fetch(`http://localhost:8080/api/orders`);
+      if (!res.ok) throw new Error("Failed to fetch orders");
+      const data = await res.json();
+      setOrders(
+        (data || []).map((o: any) => ({ ...o, status: o.status.toUpperCase() }))
+      );
+    } catch (err) {
+      console.log("fetchOrders error", err);
+      Alert.alert("Error", "Unable to load deliveries.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const loadOrders = async () => {
-      setLoading(true);
-      await fetchOrders();
-      setLoading(false);
-    };
-    loadOrders();
+    fetchOrders();
   }, []);
 
-  // Handle pull-to-refresh
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchOrders();
-    setRefreshing(false);
-  };
+  // -------------------------
+  // UPDATE STATUS
+  // -------------------------
+  const updateStatus = async (order: any) => {
+    const currentIndex = STATUS_FLOW.indexOf(order.status);
+    if (currentIndex === STATUS_FLOW.length - 1) {
+      Alert.alert("Done", "Order is already delivered.");
+      return;
+    }
+    const nextStatus = STATUS_FLOW[currentIndex + 1];
+    setUpdatingStatus(true);
 
-  // Update order status
-  const updateOrderStatus = async (orderId: number) => {
     try {
-      const order = orders.find((o) => o.id === orderId);
-      if (!order) return;
-
-      const currentStatusIndex = STATUS_ORDER.indexOf(order.status);
-      if (currentStatusIndex === STATUS_ORDER.length - 1) {
-        Alert.alert("Status Update", "Order is already delivered.");
-        return;
-      }
-
-      const nextStatus = STATUS_ORDER[currentStatusIndex + 1];
-
-      const response = await fetch(`${NGROK_URL}/api/order/${orderId}/status`, {
+      const res = await fetch(`http://localhost:8080/api/orders/${order.id}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
       });
 
-      if (response.ok) {
-        // Update local state
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === orderId ? { ...o, status: nextStatus } : o
-          )
-        );
+      if (!res.ok) throw new Error(`Failed to update status: ${res.status}`);
 
-        // Update modal if it's open
-        if (selectedOrder && selectedOrder.id === orderId) {
-          setSelectedOrder({ ...selectedOrder, status: nextStatus });
-        }
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, status: nextStatus } : o))
+      );
 
-        Alert.alert("Success", `Order status updated to ${nextStatus}`);
-      } else {
-        Alert.alert("Error", "Failed to update order status.");
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder({ ...selectedOrder, status: nextStatus });
       }
-    } catch (error) {
-      console.error("Update error:", error);
-      Alert.alert("Connection Error", "Cannot reach the server.");
+    } catch (err) {
+      console.log("Error updating status:", err);
+      Alert.alert("Error", "Could not update delivery status.");
+    } finally {
+      setUpdatingStatus(false);
     }
-  };
-
-  // Open detail modal
-  const openOrderDetail = (order: any) => {
-    setSelectedOrder(order);
-    setModalVisible(true);
-  };
-
-  const renderOrderItem = ({ item }: any) => {
-    const isDelivered = item.status === "DELIVERED";
-    const statusColor = STATUS_COLORS[item.status as keyof typeof STATUS_COLORS];
-
-    return (
-      <View style={styles.deliveryCard}>
-        <View style={styles.deliveryRow}>
-          <View style={styles.deliveryInfo}>
-            <Text style={styles.deliveryId}>Order #{item.id}</Text>
-            <Text style={styles.deliveryCustomer}>{item.customer_name}</Text>
-            <Text style={styles.deliveryAddress}>{item.delivery_address}</Text>
-          </View>
-        </View>
-
-        <View style={styles.deliveryActions}>
-          <TouchableOpacity
-            style={[
-              styles.statusButton,
-              { backgroundColor: statusColor, opacity: isDelivered ? 0.6 : 1 },
-            ]}
-            onPress={() => updateOrderStatus(item.id)}
-            disabled={isDelivered}
-            activeOpacity={isDelivered ? 1 : 0.7}
-          >
-            <Text style={styles.statusButtonText}>{item.status}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.viewButton}
-            onPress={() => openOrderDetail(item)}
-          >
-            <Text style={styles.viewButtonText}>View</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
   };
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#DA583B" />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#ff5733" />
       </View>
     );
   }
 
+  const renderRow = ({ item }: any) => {
+  const currentIndex = STATUS_FLOW.indexOf(item.status);
+  const nextStatus =
+    currentIndex < STATUS_FLOW.length - 1
+      ? STATUS_FLOW[currentIndex + 1]
+      : null;
+
+  const color = nextStatus ? STATUS_COLORS[nextStatus] : STATUS_COLORS[item.status];
+
+  return (
+    <View style={styles.row}>
+      <Text style={[styles.cell, { flex: 0.5 }]}>#{item.id}</Text>
+      <Text style={[styles.cell, { flex: 2 }]}>{item.customer_address}</Text>
+
+      <TouchableOpacity
+        style={[styles.statusButton, { backgroundColor: color }]}
+        onPress={() => updateStatus(item)}
+        disabled={item.status === "DELIVERED" || updatingStatus}
+      >
+        <Text style={styles.statusText}>
+          {nextStatus ? nextStatus.replace("_", " ") : "DONE"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.viewButton}
+        onPress={() => setSelectedOrder(item)}
+      >
+        <Text style={styles.viewText}>View</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.tableHeader}>
+        <Text style={[styles.headerCell, { flex: 0.5 }]}>ID</Text>
+        <Text style={[styles.headerCell, { flex: 2 }]}>Address</Text>
+        <Text style={[styles.headerCell, { flex: 1 }]}>Progress</Text>
+        <Text style={[styles.headerCell, { flex: 0.8 }]}>Info</Text>
+      </View>
+
       <FlatList
         data={orders}
-        renderItem={renderOrderItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#DA583B"]}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No orders yet</Text>
-          </View>
-        }
+        keyExtractor={(o) => o.id.toString()}
+        renderItem={renderRow}
       />
 
-      {/* Order Detail Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
+      {/* Modal */}
+      <Modal visible={!!selectedOrder} transparent animationType="slide">
         <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setModalVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>✕ Close</Text>
-          </TouchableOpacity>
+          <View style={styles.modalBox}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setSelectedOrder(null)}
+            >
+              <Text style={{ fontSize: 20 }}>✕</Text>
+            </TouchableOpacity>
 
-          <ScrollView style={styles.modalContent}>
             {selectedOrder && (
-              <>
-                <Text style={styles.modalTitle}>Order Details</Text>
+              <ScrollView
+                contentContainerStyle={{ paddingBottom: 40, paddingTop: 6 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={styles.modalTitle}>
+                  Restaurant: {selectedOrder.restaurant_name}
+                </Text>
+                <Text style={styles.modalText}>
+                  Customer: {selectedOrder.customer_name}
+                </Text>
+                <Text style={styles.modalText}>
+                  Address: {selectedOrder.customer_address}
+                </Text>
+                <Text style={styles.modalText}>
+                  Total: ${selectedOrder.total_cost}
+                </Text>
 
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Order ID:</Text>
-                  <Text style={styles.detailValue}>#{selectedOrder.id}</Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Customer Name:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedOrder.customer_name}
+                <Text style={[styles.modalText, { fontWeight: "bold", marginTop: 10 }]}>
+                  Items:
+                </Text>
+                {selectedOrder.products?.map((p: any) => (
+                  <Text key={p.id} style={styles.modalText}>
+                    {p.quantity} × {p.product_name} (${p.total_cost})
                   </Text>
-                </View>
+                ))}
 
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Customer Email:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedOrder.customer_email}
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    styles.modalText,
+                    { color: STATUS_COLORS[selectedOrder.status], fontWeight: "bold", marginTop: 10 },
+                  ]}
+                >
+                  Status: {selectedOrder.status.replace("_", " ")}
+                </Text>
 
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Delivery Address:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedOrder.delivery_address}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Status:</Text>
-                  <Text
-                    style={[
-                      styles.detailValue,
-                      {
-                        color:
-                          STATUS_COLORS[
-                            selectedOrder.status as keyof typeof STATUS_COLORS
-                          ],
-                        fontWeight: "bold",
-                      },
-                    ]}
-                  >
-                    {selectedOrder.status}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Items:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedOrder.items || "N/A"}
-                  </Text>
-                </View>
-
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Restaurant:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedOrder.restaurant_name || "N/A"}
-                  </Text>
-                </View>
-              </>
+                <TouchableOpacity
+                  style={[styles.modalStatusButton, { backgroundColor: (() => {
+                    const currentIndex = STATUS_FLOW.indexOf(selectedOrder.status);
+                    const nextStatus = currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : null;
+                    return nextStatus ? STATUS_COLORS[nextStatus] : STATUS_COLORS[selectedOrder.status];
+                  })() }]}
+                  onPress={() => updateStatus(selectedOrder)}
+                  disabled={selectedOrder.status === "DELIVERED" || updatingStatus}
+                >
+                  {updatingStatus ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.statusText}>
+                      {(() => {
+                        const currentIndex = STATUS_FLOW.indexOf(selectedOrder.status);
+                        const nextStatus = currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : null;
+                        return nextStatus ? nextStatus.replace("_", " ") : "DONE";
+                      })()}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
             )}
-          </ScrollView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -268,61 +223,69 @@ export default function CourierDeliveriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  listContent: { padding: 12 },
-  deliveryCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
+  tableHeader: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    paddingBottom: 10,
+    marginBottom: 5,
   },
-  deliveryRow: { marginBottom: 12 },
-  deliveryInfo: {},
-  deliveryId: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  deliveryCustomer: { fontSize: 14, color: "#666", marginTop: 4 },
-  deliveryAddress: { fontSize: 12, color: "#999", marginTop: 2 },
-  deliveryActions: { flexDirection: "row", gap: 8 },
-  statusButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    flex: 1,
-    justifyContent: "center",
+
+
+modalStatusButton: {
+  alignSelf: "stretch",   
+  paddingVertical: 12,
+  borderRadius: 8,
+  alignItems: "center",
+  marginTop: 14,
+  marginBottom: 8,
+  minHeight: 48,          
+  justifyContent: "center",
+},
+
+  headerCell: { fontWeight: "bold", fontSize: 14, color: "#444" },
+  row: {
+    flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
   },
-  statusButtonText: { color: "#fff", fontWeight: "600", fontSize: 12 },
+  cell: { fontSize: 14, color: "#333" },
+    statusButton: {
+    flex: 0.25,
+    paddingVertical: 6,
+    borderRadius: 5,
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  statusText: { color: "#fff", fontWeight: "bold" },
   viewButton: {
-    backgroundColor: "#DA583B",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    justifyContent: "center",
+    flex: 0.2,
+    paddingVertical: 6,
+    borderRadius: 5,
+    backgroundColor: "#ff5233ff",
     alignItems: "center",
   },
-  viewButtonText: { color: "#fff", fontWeight: "600", fontSize: 12 },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: { fontSize: 16, color: "#999" },
+  viewText: { color: "#fff", fontWeight: "bold" },
   modalContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 16,
+  },
+  modalBox: {
+    width: "100%",
+    maxHeight: "90%",
     backgroundColor: "#fff",
-    paddingTop: 12,
+    paddingBottom: 20,
+    borderRadius: 20,
+    padding: 25,
   },
-  closeButton: { paddingHorizontal: 16, paddingVertical: 12 },
-  closeButtonText: { color: "#DA583B", fontWeight: "600", fontSize: 16 },
-  modalContent: { flex: 1, padding: 16 },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "#333",
-  },
-  detailSection: { marginBottom: 16 },
-  detailLabel: { fontSize: 12, color: "#999", fontWeight: "600" },
-  detailValue: { fontSize: 14, color: "#333", marginTop: 4 },
+  closeButton: { alignSelf: "flex-end" },
+  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  modalText: { fontSize: 16, marginBottom: 7 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
